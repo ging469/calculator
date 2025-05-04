@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>감정평가 통합 계산기 툴킷</title>
+  <style>
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+      padding: 40px;
+      background: linear-gradient(to right, #eef2f3, #ffffff);
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #2c3e50;
+    }
+    .tool-section {
+      margin: 30px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 600px;
+    }
+    h2 {
+      color: #34495e;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+    input[type=number], select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .result {
+      margin-top: 15px;
+      padding: 15px;
+      background: #ecf9ff;
+      border-left: 4px solid #3498db;
+      border-radius: 6px;
+      font-size: 16px;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+  <div style="text-align:center; margin-bottom: 30px;">
+    <button onclick="showTool('tool1')">1. 수수료</button>
+    <button onclick="showTool('tool2')">2. 지가변동</button>
+    <button onclick="showTool('tool3')">3. 수익환원</button>
+    <button onclick="showTool('tool4')">4. 감가상각</button>
+    <button onclick="showTool('tool5')">5. 비교보정</button>
+    <button onclick="showTool('tool6')">6. 휴업보상</button>
+    <button onclick="showTool('tool7')">7. 공시지가</button>
+  </div>
+  <h1>감정평가 통합 계산기 툴킷</h1>
+
+  <div class="tool-section" id="tool1" style="display:none;">
+    <h2>1. 감정평가 수수료 계산기</h2>
+    <label>감정평가 금액 (₩):</label>
+    <input type="number" id="feeAmount">
+    <label>보정률 (%):</label>
+    <input type="number" id="feeAdjust" value="0">
+    <label><input type="checkbox" id="feeVAT"> 부가세 포함</label>
+    <button onclick="calcFee()">계산</button>
+    <div id="feeResult" class="result"></div>
+  </div>
+
+  <div class="tool-section" id="tool2" style="display:none;"><h2>2. 지가변동률 반영 시세 추정기</h2>
+    <label>기준 금액 (₩):</label>
+    <input type="number" id="basePrice">
+    <label>변동률 (% 누계):</label>
+    <input type="number" id="rate">
+    <button onclick="calcTrend()">계산</button>
+    <div id="trendResult" class="result"></div>
+  </div>
+
+  <div class="tool-section" id="tool3" style="display:none;"><h2>3. 수익환원법 계산기</h2>
+    <label>연간 순수익 (₩):</label>
+    <input type="number" id="noi">
+    <label>환원율 (%):</label>
+    <input type="number" id="capRate">
+    <button onclick="calcIncome()">계산</button>
+    <div id="incomeResult" class="result"></div>
+  </div>
+
+  <div class="tool-section" id="tool4" style="display:none;"><h2>4. 감가상각비 계산기</h2>
+    <label>건축연도:</label>
+    <input type="number" id="buildYear" value="2000">
+    <label>건물 구조 선택:</label>
+    <select id="buildingType" onchange="setLifespan()">
+      <option value="40">철근콘크리트조</option>
+      <option value="30">일반철골조</option>
+      <option value="25">경량철골조/조적조</option>
+    </select>
+    <label>내용연수 (년):</label>
+    <input type="number" id="lifespan" value="40">
+    <label>건물 취득가 (₩):</label>
+    <input type="number" id="purchasePrice">
+    <button onclick="calcDepreciation()">계산</button>
+    <div id="depreciationResult" class="result"></div>
+  </div>
+
+  <div class="tool-section" id="tool5" style="display:none;"><h2>5. 비교사례 보정 계산기</h2>
+    <label>기준 사례 가격 (₩):</label>
+    <input type="number" id="compBase">
+    <label>위치 보정률 (%):</label>
+    <input type="number" id="compLoc" value="0">
+    <label>규모 보정률 (%):</label>
+    <input type="number" id="compSize" value="0">
+    <label>용도 보정률 (%):</label>
+    <input type="number" id="compUse" value="0">
+    <button onclick="calcComparison()">계산</button>
+    <div id="compResult" class="result"></div>
+  </div>
+
+  <div class="tool-section" id="tool6" style="display:none;"><h2>6. 휴업보상액 계산기</h2>
+    <label>일 매출액 (₩):</label>
+    <input type="number" id="dailySales">
+    <label>고정비 비율 (%):</label>
+    <input type="number" id="fixedCostRate" value="0">
+    <label>휴업일수 (일):</label>
+    <input type="number" id="closureDays">
+    <button onclick="calcClosureComp()">계산</button>
+    <div id="closureResult" class="result"></div>
+  </div>
+
+  <div class="tool-section" id="tool7" style="display:none;"><h2>7. 공시지가 평균 계산기</h2>
+    <label>필지 1 - 면적 (㎡) / 단가 (₩/㎡):</label>
+    <input type="number" id="area1">
+    <input type="number" id="unit1">
+    <label>필지 2 - 면적 (㎡) / 단가 (₩/㎡):</label>
+    <input type="number" id="area2">
+    <input type="number" id="unit2">
+    <label>필지 3 - 면적 (㎡) / 단가 (₩/㎡):</label>
+    <input type="number" id="area3">
+    <input type="number" id="unit3">
+    <button onclick="calcOfficialAvg()">계산</button>
+    <div id="officialResult" class="result"></div>
+  </div>
+
+  <script>
+    function calcFee() {
+      const amount = parseFloat(document.getElementById('feeAmount').value);
+      const adjust = parseFloat(document.getElementById('feeAdjust').value) || 0;
+      const includeVAT = document.getElementById('feeVAT').checked;
+      const steps = [
+        [1000000000, 0.0008],
+        [500000000, 0.0010],
+        [100000000, 0.0014],
+        [50000000, 0.0018],
+        [10000000, 0.0022],
+        [0, 0.0028]
+      ];
+      let remaining = amount;
+      let fee = 0;
+      for (let [limit, rate] of steps) {
+        if (amount > limit) {
+          let taxable = remaining - limit;
+          fee += taxable * rate;
+          remaining = limit;
+        }
+      }
+      fee *= (1 + adjust / 100);
+      const vat = includeVAT ? fee * 0.1 : 0;
+      const total = fee + vat;
+      document.getElementById('feeResult').innerText = `기본 수수료: ${fee.toLocaleString()}원\n부가세: ${vat.toLocaleString()}원\n최종 금액: ${total.toLocaleString()}원`;
+    }
+
+    function calcTrend() {
+      const base = parseFloat(document.getElementById('basePrice').value);
+      const rate = parseFloat(document.getElementById('rate').value);
+      const future = base * (1 + rate / 100);
+      document.getElementById('trendResult').innerText = `예상 시세: ${future.toLocaleString()}원`;
+    }
+
+    function calcIncome() {
+      const income = parseFloat(document.getElementById('noi').value);
+      const cap = parseFloat(document.getElementById('capRate').value);
+      const value = income / (cap / 100);
+      document.getElementById('incomeResult').innerText = `추정 가치: ${value.toLocaleString()}원`;
+    }
+
+    function setLifespan() {
+      const type = document.getElementById('buildingType').value;
+      document.getElementById('lifespan').value = type;
+    }
+
+    function calcDepreciation() {
+      const year = parseInt(document.getElementById('buildYear').value);
+      const life = parseInt(document.getElementById('lifespan').value);
+      const price = parseFloat(document.getElementById('purchasePrice').value);
+      const now = new Date().getFullYear();
+      const used = Math.min(now - year, life);
+      const rate = used / life;
+      const value = price * (1 - rate);
+      document.getElementById('depreciationResult').innerText = `감가상각비: ${(price - value).toLocaleString()}원\n잔존가치: ${value.toLocaleString()}원 (경과연수: ${used}년)`;
+    }
+
+    function calcComparison() {
+      const base = parseFloat(document.getElementById('compBase').value);
+      const loc = parseFloat(document.getElementById('compLoc').value) || 0;
+      const size = parseFloat(document.getElementById('compSize').value) || 0;
+      const use = parseFloat(document.getElementById('compUse').value) || 0;
+      const adjusted = base * (1 + (loc + size + use) / 100);
+      document.getElementById('compResult').innerText = `보정 후 가격: ${adjusted.toLocaleString()}원`;
+    }
+
+    function calcClosureComp() {
+      const sales = parseFloat(document.getElementById('dailySales').value);
+      const rate = parseFloat(document.getElementById('fixedCostRate').value) || 0;
+      const days = parseFloat(document.getElementById('closureDays').value);
+      const loss = sales * (rate / 100) * days;
+      document.getElementById('closureResult').innerText = `예상 휴업보상액: ${loss.toLocaleString()}원`;
+    }
+
+    function calcOfficialAvg() {
+      const a1 = parseFloat(document.getElementById('area1').value);
+      const u1 = parseFloat(document.getElementById('unit1').value);
+      const a2 = parseFloat(document.getElementById('area2').value);
+      const u2 = parseFloat(document.getElementById('unit2').value);
+      const a3 = parseFloat(document.getElementById('area3').value);
+      const u3 = parseFloat(document.getElementById('unit3').value);
+      const totalArea = a1 + a2 + a3;
+      const weightedAvg = (a1 * u1 + a2 * u2 + a3 * u3) / totalArea;
+      document.getElementById('officialResult').innerText = `면적 가중 평균 단가: ${Math.round(weightedAvg).toLocaleString()}원/㎡`;
+    }
+  function showTool(id) {
+  const tools = document.querySelectorAll('.tool-section');
+  tools.forEach(tool => tool.style.display = 'none');
+  const selected = document.getElementById(id);
+  if (selected) selected.style.display = 'block';
+}
+</script>
+</body>
+</html>
